@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma, QuestionType, Language } from '@dse/database';
+import { prisma } from '@dse/database';
 import { LLMService } from '@dse/llm';
 import type { QuestionGenerationInput } from '@dse/llm';
 
@@ -41,8 +41,8 @@ app.post('/generate', zValidator('json', z.object({
   // 构建 LLM 输入
   const input: QuestionGenerationInput = {
     exam: 'HKDSE Physics',
-    syllabusSections: [...new Set(knowledgeTags.map(t => t.category.name))],
-    knowledgeTags: knowledgeTags.map(t => t.name),
+    syllabusSections: Array.from(new Set(knowledgeTags.map((t) => t.category.name))),
+    knowledgeTags: knowledgeTags.map((t) => t.name),
     customTags: data.customTags,
     questionType: data.questionType,
     difficulty: data.difficulty || 3,
@@ -65,8 +65,8 @@ app.post('/generate', zValidator('json', z.object({
     // 创建题目记录
     const question = await prisma.question.create({
       data: {
-        type: data.questionType === 'mcq' ? QuestionType.MCQ : QuestionType.SHORT,
-        languageBase: (data.language || 'zh-cn').toUpperCase().replace('-', '_') as Language,
+        type: data.questionType === 'mcq' ? 'MCQ' : 'SHORT',
+        languageBase: (data.language || 'zh-cn').toUpperCase().replace('-', '_') as 'ZH_CN' | 'ZH_TW' | 'EN',
         stemBase: generatedQuestion.stem,
         options: generatedQuestion.options,
         correctAnswer: generatedQuestion.correctAnswer,
@@ -203,9 +203,9 @@ app.get('/:id/translate/:language', async (c) => {
       context: '这是一道 HKDSE Physics 考试题目',
     });
 
-    let translatedOptions = null;
-    if (question.options && question.type === QuestionType.MCQ) {
-      const options = question.options as any;
+    let translatedOptions: Record<string, string> | null = null;
+    if (question.options && question.type === 'MCQ') {
+      const options = question.options as Record<string, string>;
       translatedOptions = {};
       for (const [key, value] of Object.entries(options)) {
         translatedOptions[key] = await llmService.translate({

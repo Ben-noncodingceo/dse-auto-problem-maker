@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma, SourceType } from '@dse/database';
+import { prisma } from '@dse/database';
 
 const app = new Hono();
 
@@ -22,7 +22,7 @@ app.post('/url', zValidator('json', z.object({
 
   const source = await prisma.syllabusSource.create({
     data: {
-      type: SourceType.URL,
+      type: 'URL',
       url,
       status: 'PENDING',
     },
