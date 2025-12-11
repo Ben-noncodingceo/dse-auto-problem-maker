@@ -154,7 +154,7 @@ app.get('/:id', async (c) => {
 // 获取题目翻译
 app.get('/:id/translate/:language', async (c) => {
   const id = c.req.param('id');
-  const language = c.req.param('language').toUpperCase().replace('-', '_') as Language;
+  const language = c.req.param('language').toUpperCase().replace('-', '_') as 'ZH_CN' | 'ZH_TW' | 'EN';
 
   // 查找已有翻译
   let translation = await prisma.questionTranslation.findUnique({
