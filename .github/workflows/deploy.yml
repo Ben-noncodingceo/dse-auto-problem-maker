@@ -1,0 +1,72 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - main  # 当推送到 main 分支时自动部署
+  workflow_dispatch:  # 允许手动触发部署
+
+jobs:
+  # 部署前端到 Cloudflare Pages
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    name: Deploy Frontend to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build frontend
+        run: pnpm --filter @dse/frontend build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}  # Worker 的 URL
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: dse-frontend  # 你的 Pages 项目名称
+          directory: apps/frontend/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  # 部署后端到 Cloudflare Workers
+  deploy-backend:
+    runs-on: ubuntu-latest
+    name: Deploy Backend to Cloudflare Workers
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+          workingDirectory: .
