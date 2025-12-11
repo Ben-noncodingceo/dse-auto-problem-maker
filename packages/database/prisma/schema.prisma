@@ -1,0 +1,231 @@
+// Prisma schema for DSE Auto Problem Maker
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ 大纲相关 ============
+
+// 大纲来源
+model SyllabusSource {
+  id        String   @id @default(cuid())
+  type      SourceType
+  url       String?
+  filePath  String?  @map("file_path")
+  status    ParseStatus @default(PENDING)
+  parsedAt  DateTime? @map("parsed_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("syllabus_sources")
+}
+
+enum SourceType {
+  URL
+  PDF
+}
+
+enum ParseStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// 一级知识目录
+model KnowledgeCategory {
+  id    String @id @default(cuid())
+  name  String
+  order Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tags      KnowledgeTag[]
+
+  @@map("knowledge_categories")
+}
+
+// 二级知识点标签
+model KnowledgeTag {
+  id           String @id @default(cuid())
+  name         String
+  categoryId   String @map("category_id")
+  externalRefs Json?  @map("external_refs") // 大纲章节号等
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  category  KnowledgeCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  questions QuestionKnowledgeTag[]
+
+  @@map("knowledge_tags")
+}
+
+// 能力标签
+model AbilityTag {
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  questions QuestionAbilityTag[]
+
+  @@map("ability_tags")
+}
+
+// ============ 真题相关 ============
+
+model PastPaperSource {
+  id           String @id @default(cuid())
+  year         Int
+  paperNo      String @map("paper_no")
+  filePathPdf  String @map("file_path_pdf")
+  filePathLatex String? @map("file_path_latex")
+  status       ParseStatus @default(PENDING)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("past_paper_sources")
+}
+
+// ============ AI 供应商配置 ============
+
+model AIProviderConfig {
+  id           String @id @default(cuid())
+  providerName AIProvider @map("provider_name")
+  baseUrl      String @map("base_url")
+  modelName    String @map("model_name")
+  apiKey       String @map("api_key") // 需要加密存储
+  isDefault    Boolean @default(false) @map("is_default")
+  timeoutMs    Int @default(30000) @map("timeout_ms")
+  extraParams  Json? @map("extra_params")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  createdQuestions Question[] @relation("CreatedBy")
+  gradingResults   GradingResult[] @relation("GradedBy")
+
+  @@map("ai_provider_configs")
+}
+
+enum AIProvider {
+  DEEPSEEK
+  DOUBAO
+  TONGYI
+  CHATGPT
+  CUSTOM
+}
+
+// ============ 题目相关 ============
+
+model Question {
+  id              String @id @default(cuid())
+  type            QuestionType
+  languageBase    Language @map("language_base")
+  stemBase        String @map("stem_base") @db.Text
+  options         Json? // 选择题选项 {A: "...", B: "...", C: "...", D: "..."}
+  correctAnswer   Json @map("correct_answer") @db.Text // 正确答案
+  solution        String @db.Text // 解析
+  difficulty      Int @default(3) // 1-5 难度等级
+  createdByAIProviderId String? @map("created_by_ai_provider_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdByAI AIProviderConfig? @relation("CreatedBy", fields: [createdByAIProviderId], references: [id], onDelete: SetNull)
+
+  knowledgeTags   QuestionKnowledgeTag[]
+  abilityTags     QuestionAbilityTag[]
+  translations    QuestionTranslation[]
+  userAnswers     UserAnswer[]
+
+  @@map("questions")
+}
+
+enum QuestionType {
+  MCQ        // 选择题
+  SHORT      // 简答/计算题
+}
+
+enum Language {
+  ZH_CN  // 简体中文
+  ZH_TW  // 繁体中文
+  EN     // 英文
+}
+
+// 题目-知识点标签 关联表
+model QuestionKnowledgeTag {
+  questionId String @map("question_id")
+  tagId      String @map("tag_id")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      KnowledgeTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@map("question_knowledge_tags")
+}
+
+// 题目-能力标签 关联表
+model QuestionAbilityTag {
+  questionId String @map("question_id")
+  tagId      String @map("tag_id")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      AbilityTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@map("question_ability_tags")
+}
+
+// 题目翻译
+model QuestionTranslation {
+  id         String @id @default(cuid())
+  questionId String @map("question_id")
+  language   Language
+  stem       String @db.Text
+  options    Json? // 翻译后的选项
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, language])
+  @@map("question_translations")
+}
+
+// ============ 用户答题相关 ============
+
+model UserAnswer {
+  id         String @id @default(cuid())
+  questionId String @map("question_id")
+  userId     String? @map("user_id") // 可选，匿名用户为 null
+  language   Language
+  answerRaw  Json @map("answer_raw") @db.Text // 用户原始答案
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  gradingResult GradingResult?
+
+  @@map("user_answers")
+}
+
+// 批改结果
+model GradingResult {
+  id                    String @id @default(cuid())
+  userAnswerId          String @unique @map("user_answer_id")
+  score                 Float  // 分数
+  isCorrect             Boolean @map("is_correct")
+  feedbackText          String @map("feedback_text") @db.Text
+  abilityAssessment     Json @map("ability_assessment") @db.Text // 能力评估 JSON
+  suggestions           String @db.Text // 改进建议
+  gradedByAIProviderId  String? @map("graded_by_ai_provider_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  userAnswer UserAnswer @relation(fields: [userAnswerId], references: [id], onDelete: Cascade)
+  gradedByAI AIProviderConfig? @relation("GradedBy", fields: [gradedByAIProviderId], references: [id], onDelete: SetNull)
+
+  @@map("grading_results")
+}

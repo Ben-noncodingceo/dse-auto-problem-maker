@@ -1,0 +1,30 @@
+{
+  "name": "dse-auto-problem-maker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HKDSE Physics Automatic Question Generator and Grading System",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @dse/database generate",
+    "db:push": "pnpm --filter @dse/database push",
+    "db:migrate": "pnpm --filter @dse/database migrate"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.14.4"
+}
