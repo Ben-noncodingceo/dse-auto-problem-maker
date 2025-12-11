@@ -61,17 +61,24 @@ Worker 通过 **DATABASE_URL** 连接到 Supabase。以下是详细步骤：
 
 ### 第 1 步：获取 Supabase 数据库连接字符串
 
+⚠️ **重要：Cloudflare Worker 必须使用连接池（Connection Pooling）**
+
 1. 在 Supabase 项目页面
 2. 点击左侧的 **"Project Settings"**（齿轮图标）
 3. 在左侧菜单点击 **"Database"**
 4. 向下滚动找到 **"Connection string"** 部分
-5. 选择 **"URI"** 模式（不是 Pooler）
-6. 你会看到类似这样的字符串：
+5. 选择 **"Session pooling"** 模式（⚠️ 不是 Transaction pooling，也不是 URI）
+6. 你会看到类似这样的字符串（注意端口是 **6543**）：
    ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.xxx.supabase.co:5432/postgres
+   postgresql://postgres.xxx:[YOUR-PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
    ```
 7. **重要**：将 `[YOUR-PASSWORD]` 替换为你创建项目时设置的数据库密码
 8. **复制完整的连接字符串**
+
+💡 **为什么要用 6543 端口？**
+- Cloudflare Workers 是无服务器环境，不支持长连接
+- 端口 6543 使用连接池，专为无服务器设计
+- 端口 5432 是直连数据库，Worker 无法使用
 
 ### 第 2 步：在 GitHub 设置 DATABASE_URL Secret
 
@@ -79,7 +86,10 @@ Worker 通过 **DATABASE_URL** 连接到 Supabase。以下是详细步骤：
 
 1. GitHub 仓库 → Settings → Secrets and variables → Actions
 2. 检查 `DATABASE_URL` 的值是否是完整的连接字符串
-3. 格式应该是：`postgresql://postgres:你的密码@db.xxx.supabase.co:5432/postgres`
+3. ⚠️ **格式必须包含端口 6543（连接池）**：
+   ```
+   postgresql://postgres.xxx:你的密码@aws-0-xx.pooler.supabase.com:6543/postgres
+   ```
 
 ### 第 3 步：GitHub Actions 会自动注入
 
