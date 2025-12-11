@@ -1,5 +1,5 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Database, Tag, Brain, FileText } from 'lucide-react';
+import { Tag, Brain, FileText } from 'lucide-react';
 import KnowledgeManagement from './admin/KnowledgeManagement';
 import AIProviderManagement from './admin/AIProviderManagement';
 import SyllabusManagement from './admin/SyllabusManagement';
