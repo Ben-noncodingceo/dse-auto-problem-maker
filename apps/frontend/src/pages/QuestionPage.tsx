@@ -265,7 +265,7 @@ export default function QuestionPage() {
               <div>
                 <h3 className="text-base font-semibold text-gray-900 mb-2">改进建议</h3>
                 <ul className="list-disc list-inside space-y-1 bg-yellow-50 p-4 rounded-lg">
-                  {suggestions.map((suggestion, index) => (
+                  {suggestions.map((suggestion: string, index: number) => (
                     <li key={index} className="text-gray-700">{suggestion}</li>
                   ))}
                 </ul>

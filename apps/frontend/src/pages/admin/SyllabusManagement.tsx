@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { Upload, Link as LinkIcon } from 'lucide-react';
 
 export default function SyllabusManagement() {
   const [syllabusUrl, setSyllabusUrl] = useState('');

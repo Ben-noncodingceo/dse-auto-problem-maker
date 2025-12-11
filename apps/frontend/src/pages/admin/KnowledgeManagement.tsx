@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Loader2, Edit, Trash2 } from 'lucide-react';
 import { getKnowledgeCategories, type KnowledgeCategory } from '@/lib/api';
 
 export default function KnowledgeManagement() {
-  const queryClient = useQueryClient();
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
