@@ -129,7 +129,7 @@ model Question {
   languageBase    Language @map("language_base")
   stemBase        String @map("stem_base") @db.Text
   options         Json? // 选择题选项 {A: "...", B: "...", C: "...", D: "..."}
-  correctAnswer   Json @map("correct_answer") @db.Text // 正确答案
+  correctAnswer   Json @map("correct_answer") @db.JsonB // 正确答案
   solution        String @db.Text // 解析
   difficulty      Int @default(3) // 1-5 难度等级
   createdByAIProviderId String? @map("created_by_ai_provider_id")
@@ -203,7 +203,7 @@ model UserAnswer {
   questionId String @map("question_id")
   userId     String? @map("user_id") // 可选，匿名用户为 null
   language   Language
-  answerRaw  Json @map("answer_raw") @db.Text // 用户原始答案
+  answerRaw  Json @map("answer_raw") @db.JsonB // 用户原始答案
   createdAt  DateTime @default(now()) @map("created_at")
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -219,7 +219,7 @@ model GradingResult {
   score                 Float  // 分数
   isCorrect             Boolean @map("is_correct")
   feedbackText          String @map("feedback_text") @db.Text
-  abilityAssessment     Json @map("ability_assessment") @db.Text // 能力评估 JSON
+  abilityAssessment     Json @map("ability_assessment") @db.JsonB // 能力评估 JSON
   suggestions           String @db.Text // 改进建议
   gradedByAIProviderId  String? @map("graded_by_ai_provider_id")
   createdAt             DateTime @default(now()) @map("created_at")

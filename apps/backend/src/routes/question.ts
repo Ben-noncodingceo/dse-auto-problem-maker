@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma } from '@dse/database';
+import { prisma, Prisma } from '@dse/database';
 import { LLMService } from '@dse/llm';
 import type { QuestionGenerationInput } from '@dse/llm';
 
@@ -222,7 +222,7 @@ app.get('/:id/translate/:language', async (c) => {
         questionId: id,
         language,
         stem: translatedStem,
-        options: translatedOptions,
+        options: translatedOptions === null ? Prisma.JsonNull : translatedOptions,
       },
     });
 
