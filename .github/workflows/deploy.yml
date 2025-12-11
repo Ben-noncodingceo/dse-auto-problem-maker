@@ -63,6 +63,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
+      - name: Build backend
+        run: pnpm --filter @dse/backend build
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -70,3 +76,15 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
           workingDirectory: .
+          secrets: |
+            DATABASE_URL
+            DEEPSEEK_API_KEY
+            OPENAI_API_KEY
+            DOUBAO_API_KEY
+            TONGYI_API_KEY
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DOUBAO_API_KEY: ${{ secrets.DOUBAO_API_KEY }}
+          TONGYI_API_KEY: ${{ secrets.TONGYI_API_KEY }}
