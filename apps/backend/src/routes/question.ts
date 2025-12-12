@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma, Prisma } from '@dse/database';
+import { prisma } from '@dse/database';
 import { LLMService } from '@dse/llm';
 import type { QuestionGenerationInput } from '@dse/llm';
 
@@ -41,8 +41,8 @@ app.post('/generate', zValidator('json', z.object({
   // 构建 LLM 输入
   const input: QuestionGenerationInput = {
     exam: 'HKDSE Physics',
-    syllabusSections: Array.from(new Set(knowledgeTags.map((t) => t.category.name))),
-    knowledgeTags: knowledgeTags.map((t) => t.name),
+    syllabusSections: Array.from(new Set(knowledgeTags.map((t: any) => t.category.name))),
+    knowledgeTags: knowledgeTags.map((t: any) => t.name),
     customTags: data.customTags,
     questionType: data.questionType,
     difficulty: data.difficulty || 3,
@@ -222,7 +222,7 @@ app.get('/:id/translate/:language', async (c) => {
         questionId: id,
         language,
         stem: translatedStem,
-        options: translatedOptions === null ? Prisma.JsonNull : translatedOptions,
+        ...(translatedOptions !== null && { options: translatedOptions }),
       },
     });
 
