@@ -20,7 +20,7 @@ export class LLMClient {
   }
 
   private isOpenAICompatible(): boolean {
-    return ['deepseek', 'chatgpt', 'custom'].includes(this.config.provider);
+    return ['deepseek', 'chatgpt', 'gemini', 'custom'].includes(this.config.provider);
   }
 
   async chat(request: LLMRequest): Promise<LLMResponse> {
