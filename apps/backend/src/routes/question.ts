@@ -41,8 +41,8 @@ app.post('/generate', zValidator('json', z.object({
   // 构建 LLM 输入
   const input: QuestionGenerationInput = {
     exam: 'HKDSE Physics',
-    syllabusSections: Array.from(new Set(knowledgeTags.map((t) => t.category.name))),
-    knowledgeTags: knowledgeTags.map((t) => t.name),
+    syllabusSections: Array.from(new Set(knowledgeTags.map((t: any) => t.category.name))),
+    knowledgeTags: knowledgeTags.map((t: any) => t.name),
     customTags: data.customTags,
     questionType: data.questionType,
     difficulty: data.difficulty || 3,
@@ -154,7 +154,7 @@ app.get('/:id', async (c) => {
 // 获取题目翻译
 app.get('/:id/translate/:language', async (c) => {
   const id = c.req.param('id');
-  const language = c.req.param('language').toUpperCase().replace('-', '_') as Language;
+  const language = c.req.param('language').toUpperCase().replace('-', '_') as 'ZH_CN' | 'ZH_TW' | 'EN';
 
   // 查找已有翻译
   let translation = await prisma.questionTranslation.findUnique({
@@ -222,7 +222,7 @@ app.get('/:id/translate/:language', async (c) => {
         questionId: id,
         language,
         stem: translatedStem,
-        options: translatedOptions,
+        ...(translatedOptions !== null && { options: translatedOptions }),
       },
     });
 

@@ -23,15 +23,14 @@ HKDSE Physics 自动出题与批改系统
 - Zustand
 
 ### 后端
-- Node.js + TypeScript
-- Hono (轻量级 Web 框架)
-- Prisma ORM
-- PostgreSQL
-- Redis (缓存)
+- Hono (轻量级 Web 框架，支持 Cloudflare Workers)
+- Prisma ORM + PostgreSQL
+- Supabase (数据库托管)
 
-### 基础设施
-- Docker (LaTeX 编译服务)
-- Cloudflare R2 (对象存储，可选)
+### 部署
+- **Cloudflare Pages** (前端托管) - 推荐 ⭐
+- **Cloudflare Workers** (后端 API) - 推荐 ⭐
+- GitHub Actions (自动化部署)
 
 ## 项目结构
 
@@ -54,18 +53,21 @@ dse-auto-problem-maker/
 
 **完全免费，自动部署，无需本地环境！**
 
-1. **查看快速参考**: [CLOUDFLARE-QUICKSTART.md](CLOUDFLARE-QUICKSTART.md)
-2. **详细步骤**: [docs/cloudflare-deployment.md](docs/cloudflare-deployment.md)
+📋 **完整部署指南**:
+1. **完整检查清单**: [DEPLOYMENT-CHECKLIST.md](DEPLOYMENT-CHECKLIST.md) - **推荐新手使用** ⭐
+2. **Supabase 设置**: [SUPABASE-SETUP.md](SUPABASE-SETUP.md)
+3. **快速参考**: [CLOUDFLARE-QUICKSTART.md](CLOUDFLARE-QUICKSTART.md)
+4. **详细步骤**: [docs/cloudflare-deployment.md](docs/cloudflare-deployment.md)
 
 只需要：
-- GitHub 账号（已有 ✓）
-- Cloudflare 账号（免费注册）
-- Supabase 账号（免费数据库）
-- LLM API Key（DeepSeek/OpenAI）
+- ✅ GitHub 账号（已有）
+- ✅ Cloudflare 账号（免费注册）
+- ✅ Supabase 账号（免费数据库）
+- ✅ LLM API Key（推荐 DeepSeek，性价比最高）
 
 **部署后**:
-- 前端: `https://your-project.pages.dev`
-- 后端: `https://your-worker.workers.dev`
+- 前端: `https://dse-frontend.pages.dev`
+- 后端: `https://dse-auto-problem-maker.<你的子域>.workers.dev`
 - 推送到 main 分支自动部署 🎉
 
 ---

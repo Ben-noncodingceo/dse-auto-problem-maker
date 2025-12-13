@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma, Language } from '@dse/database';
+import { prisma } from '@dse/database';
 import { LLMService } from '@dse/llm';
 import type { GradingInput } from '@dse/llm';
 
@@ -35,7 +35,7 @@ app.post('/submit', zValidator('json', z.object({
     data: {
       questionId: data.questionId,
       userId: data.userId,
-      language: (data.language || 'zh-cn').toUpperCase().replace('-', '_') as Language,
+      language: (data.language || 'zh-cn').toUpperCase().replace('-', '_') as 'ZH_CN' | 'ZH_TW' | 'EN',
       answerRaw: data.answer,
     },
   });
@@ -63,7 +63,7 @@ app.post('/submit', zValidator('json', z.object({
     standardAnswer: question.correctAnswer as any,
     studentAnswer: data.answer,
     maxScore: 10, // 默认10分
-    syllabusContext: question.abilityTags.map(t => t.tag.name).join('、'),
+    syllabusContext: question.abilityTags.map((t: any) => t.tag.name).join('、'),
   };
 
   try {

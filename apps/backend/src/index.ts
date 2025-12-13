@@ -1,8 +1,6 @@
-import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import dotenv from 'dotenv';
 
 // Routes
 import syllabusRoutes from './routes/syllabus';
@@ -10,8 +8,6 @@ import knowledgeRoutes from './routes/knowledge';
 import aiProviderRoutes from './routes/ai-provider';
 import questionRoutes from './routes/question';
 import gradingRoutes from './routes/grading';
-
-dotenv.config();
 
 const app = new Hono();
 
@@ -45,11 +41,5 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
-const port = parseInt(process.env.PORT || '3000', 10);
-
-console.log(`Server is running on http://localhost:${port}`);
-
-serve({
-  fetch: app.fetch,
-  port,
-});
+// Export for Cloudflare Workers
+export default app;

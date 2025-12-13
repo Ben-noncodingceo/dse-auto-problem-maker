@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { prisma, AIProvider } from '@dse/database';
+import { prisma } from '@dse/database';
 import bcrypt from 'bcryptjs';
 
 const app = new Hono();
@@ -13,7 +13,7 @@ app.get('/', async (c) => {
   });
 
   // 不返回完整的 API Key，只返回部分用于识别
-  const safeProviders = providers.map(p => ({
+  const safeProviders = providers.map((p: any) => ({
     ...p,
     apiKey: p.apiKey.substring(0, 8) + '****',
   }));
