@@ -173,14 +173,22 @@ export default function AIProviderManagement() {
           这些供应商的 API Key 需要在 Cloudflare Worker 环境变量中配置。配置后点击"启用"即可使用。
         </p>
 
-        <div className="space-y-3">
-          {presetProviders.map((provider) => {
-            const preset = PROVIDER_PRESETS[provider.providerName as keyof typeof PROVIDER_PRESETS];
-            return (
-              <div
-                key={provider.id}
-                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-              >
+        {presetProviders.length === 0 ? (
+          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+            <p className="text-gray-600 mb-2">正在加载预设 AI 供应商...</p>
+            <p className="text-sm text-gray-500">
+              如果长时间未显示，请检查后端服务是否正常运行
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {presetProviders.map((provider) => {
+              const preset = PROVIDER_PRESETS[provider.providerName as keyof typeof PROVIDER_PRESETS];
+              return (
+                <div
+                  key={provider.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
@@ -254,9 +262,10 @@ export default function AIProviderManagement() {
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 自定义 AI 供应商 */}

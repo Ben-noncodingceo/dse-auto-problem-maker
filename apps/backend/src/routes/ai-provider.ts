@@ -82,11 +82,11 @@ app.get('/', async (c) => {
       providerName: key,
       displayName: preset.name,
       baseUrl: preset.baseUrl,
-      modelName: preset.modelName,
+      modelName: dbConfig?.modelName || preset.modelName, // 优先使用数据库中的配置
       isDefault: dbConfig?.isDefault || false,
       isPreset: true,
       hasApiKey,
-      enabled: !!dbConfig || hasApiKey, // 如果有 API Key 或数据库有配置，就认为已启用
+      enabled: !!dbConfig, // 只有在数据库中有记录才认为已启用
     });
   }
 
