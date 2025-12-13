@@ -15,6 +15,7 @@ export default function SyllabusManagement() {
   const [urlLoading, setUrlLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 加载大纲列表
@@ -25,9 +26,11 @@ export default function SyllabusManagement() {
   const loadSources = async () => {
     try {
       const result = await getSyllabusSources();
-      setSources(result.data);
+      setSources(result.data || []);
+      setInitError(null);
     } catch (err) {
       console.error('Failed to load syllabus sources:', err);
+      setInitError(err instanceof Error ? err.message : '加载大纲列表失败');
     }
   };
 
@@ -147,6 +150,14 @@ export default function SyllabusManagement() {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">大纲管理</h2>
+
+      {initError && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg">
+          <p className="font-medium">⚠️ 后端服务连接失败</p>
+          <p className="text-sm mt-1">{initError}</p>
+          <p className="text-sm mt-2">可能原因：后端 Worker 尚未部署或配置不正确</p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
