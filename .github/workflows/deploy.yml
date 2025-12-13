@@ -33,14 +33,14 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}  # Worker 的 URL
 
+      - name: Install Wrangler for Pages
+        run: pnpm add -g wrangler
+
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: dse-frontend  # 你的 Pages 项目名称
-          directory: apps/frontend/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        run: wrangler pages deploy apps/frontend/dist --project-name=dse-frontend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # 部署后端到 Cloudflare Workers
   deploy-backend:
