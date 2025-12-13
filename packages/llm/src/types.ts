@@ -78,3 +78,25 @@ export interface GradingOutput {
   };
   suggestions: string[]; // 改进建议
 }
+
+export interface SyllabusAnalysisInput {
+  text: string; // PDF 提取的文本内容
+  exam: string; // 考试名称，如 "HKDSE Physics"
+  context?: string; // 额外上下文
+}
+
+export interface SyllabusAnalysisOutput {
+  categories: Array<{
+    name: string; // 一级分类名称，如 "力学"
+    order: number; // 排序
+    tags: Array<{
+      name: string; // 二级知识点名称，如 "牛顿第二定律"
+      description?: string; // 知识点描述
+      externalRefs?: {
+        section?: string; // 大纲章节号
+        page?: number; // 页码
+        [key: string]: any;
+      };
+    }>;
+  }>;
+}
