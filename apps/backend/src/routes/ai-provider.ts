@@ -62,53 +62,69 @@ const PRESET_PROVIDERS = {
 app.get('/', async (c) => {
   const prisma = getPrisma(c);
 
-  // 获取数据库中的自定义配置
-  const dbProviders = await prisma.aIProviderConfig.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const providers = [];
-
-  // 添加预设提供商
-  for (const [key, preset] of Object.entries(PRESET_PROVIDERS)) {
-    const envKey = (c.env as any)[preset.envKey];
-    const hasApiKey = !!envKey;
-
-    // 查找数据库中是否有这个提供商的配置
-    const dbConfig = dbProviders.find(p => p.providerName === key);
-
-    providers.push({
-      id: dbConfig?.id || `preset-${key}`,
-      providerName: key,
-      displayName: preset.name,
-      baseUrl: preset.baseUrl,
-      modelName: dbConfig?.modelName || preset.modelName, // 优先使用数据库中的配置
-      isDefault: dbConfig?.isDefault || false,
-      isPreset: true,
-      hasApiKey,
-      enabled: !!dbConfig, // 只有在数据库中有记录才认为已启用
+  try {
+    // 获取数据库中的自定义配置
+    const dbProviders = await prisma.aIProviderConfig.findMany({
+      orderBy: { createdAt: 'desc' },
     });
-  }
 
-  // 添加自定义提供商
-  for (const provider of dbProviders) {
-    if (provider.providerName === 'CUSTOM') {
-      providers.push({
-        id: provider.id,
-        providerName: provider.providerName,
-        displayName: '自定义',
-        baseUrl: provider.baseUrl,
-        modelName: provider.modelName,
-        isDefault: provider.isDefault,
-        isPreset: false,
-        hasApiKey: true,
-        enabled: true,
-        apiKey: provider.apiKey.substring(0, 8) + '****', // 部分显示
-      });
+    console.log('Database providers count:', dbProviders.length);
+
+    const providers = [];
+
+    // 添加预设提供商
+    for (const [key, preset] of Object.entries(PRESET_PROVIDERS)) {
+      const envKey = (c.env as any)[preset.envKey];
+      const hasApiKey = !!envKey;
+
+      // 查找数据库中是否有这个提供商的配置
+      const dbConfig = dbProviders.find(p => p.providerName === key);
+
+      const provider = {
+        id: dbConfig?.id || `preset-${key}`,
+        providerName: key,
+        displayName: preset.name,
+        baseUrl: preset.baseUrl,
+        modelName: dbConfig?.modelName || preset.modelName, // 优先使用数据库中的配置
+        isDefault: dbConfig?.isDefault || false,
+        isPreset: true,
+        hasApiKey,
+        enabled: !!dbConfig, // 只有在数据库中有记录才认为已启用
+      };
+
+      providers.push(provider);
+      console.log(`Added preset provider: ${key}, hasApiKey: ${hasApiKey}, enabled: ${!!dbConfig}`);
     }
-  }
 
-  return c.json({ data: providers });
+    // 添加自定义提供商
+    for (const provider of dbProviders) {
+      if (provider.providerName === 'CUSTOM') {
+        providers.push({
+          id: provider.id,
+          providerName: provider.providerName,
+          displayName: '自定义',
+          baseUrl: provider.baseUrl,
+          modelName: provider.modelName,
+          isDefault: provider.isDefault,
+          isPreset: false,
+          hasApiKey: true,
+          enabled: true,
+          apiKey: provider.apiKey.substring(0, 8) + '****', // 部分显示
+        });
+      }
+    }
+
+    console.log(`Total providers returned: ${providers.length}`);
+    console.log('Preset providers:', providers.filter(p => p.isPreset).length);
+    console.log('Custom providers:', providers.filter(p => !p.isPreset).length);
+
+    return c.json({ data: providers });
+  } catch (error) {
+    console.error('Error in GET /ai-providers:', error);
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to fetch AI providers',
+    }, 500);
+  }
 });
 
 // 启用/更新预设提供商
