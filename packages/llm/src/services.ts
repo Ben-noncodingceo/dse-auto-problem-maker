@@ -7,6 +7,8 @@ import type {
   TranslationInput,
   GradingInput,
   GradingOutput,
+  SyllabusAnalysisInput,
+  SyllabusAnalysisOutput,
 } from './types';
 
 export class LLMService {
@@ -108,6 +110,44 @@ export class LLMService {
     } catch (error) {
       console.error('Failed to parse grading output:', response.content);
       throw new Error(`解析批改结果失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * 分析大纲，提取知识点结构
+   */
+  async analyzeSyllabus(input: SyllabusAnalysisInput): Promise<SyllabusAnalysisOutput> {
+    const prompt = PromptBuilder.buildSyllabusAnalysisPrompt(input);
+
+    const response = await this.client.chat({
+      prompt,
+      temperature: 0.3, // 使用较低温度保证准确性
+      maxTokens: 4000,
+      jsonMode: true,
+    });
+
+    try {
+      const result = JSON.parse(response.content);
+
+      // 验证必需字段
+      if (!result.categories || !Array.isArray(result.categories)) {
+        throw new Error('分析结果格式错误：缺少 categories 字段');
+      }
+
+      // 验证每个分类的结构
+      result.categories.forEach((category: any, index: number) => {
+        if (!category.name || !category.tags || !Array.isArray(category.tags)) {
+          throw new Error(`分类 ${index + 1} 格式错误`);
+        }
+        if (typeof category.order !== 'number') {
+          category.order = index + 1;
+        }
+      });
+
+      return result as SyllabusAnalysisOutput;
+    } catch (error) {
+      console.error('Failed to parse syllabus analysis output:', response.content);
+      throw new Error(`解析大纲分析结果失败: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

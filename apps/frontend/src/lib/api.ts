@@ -155,3 +155,44 @@ export const updateAIProvider = (id: string, data: any): Promise<{ data: AIProvi
 export const deleteAIProvider = (id: string): Promise<void> => {
   return api.delete(`/ai-providers/${id}`);
 };
+
+// Syllabus APIs
+export interface SyllabusSource {
+  id: string;
+  type: 'URL' | 'PDF';
+  url?: string;
+  fileName?: string;
+  fileSize?: number;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  parsedData?: any;
+  errorMessage?: string;
+  parsedAt?: string;
+  createdAt: string;
+}
+
+export const getSyllabusSources = (): Promise<{ data: SyllabusSource[] }> => {
+  return api.get('/syllabus');
+};
+
+export const getSyllabusSource = (id: string): Promise<{ data: SyllabusSource }> => {
+  return api.get(`/syllabus/${id}`);
+};
+
+export const uploadSyllabusPDF = (file: File): Promise<{ data: SyllabusSource }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return axios.post('/api/syllabus/pdf', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }).then(res => res.data);
+};
+
+export const parseSyllabusSource = (id: string): Promise<{ message: string }> => {
+  return api.post(`/syllabus/${id}/parse`);
+};
+
+export const addSyllabusUrl = (url: string): Promise<{ data: SyllabusSource }> => {
+  return api.post('/syllabus/url', { url });
+};

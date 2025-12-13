@@ -13,14 +13,20 @@ datasource db {
 
 // 大纲来源
 model SyllabusSource {
-  id        String   @id @default(cuid())
-  type      SourceType
-  url       String?
-  filePath  String?  @map("file_path")
-  status    ParseStatus @default(PENDING)
-  parsedAt  DateTime? @map("parsed_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  type          SourceType
+  url           String?
+  filePath      String?  @map("file_path")
+  fileContent   Bytes?   @map("file_content") // PDF 文件内容（二进制）
+  fileName      String?  @map("file_name") // 原始文件名
+  fileSize      Int?     @map("file_size") // 文件大小（字节）
+  mimeType      String?  @map("mime_type") // MIME 类型
+  status        ParseStatus @default(PENDING)
+  parsedData    Json?    @map("parsed_data") @db.JsonB // 解析结果（知识点结构）
+  errorMessage  String?  @map("error_message") @db.Text // 解析错误信息
+  parsedAt      DateTime? @map("parsed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("syllabus_sources")
 }

@@ -4,6 +4,7 @@ import type {
   TranslationInput,
   GradingInput,
   GradingOutput,
+  SyllabusAnalysisInput,
 } from './types';
 
 export class PromptBuilder {
@@ -176,5 +177,84 @@ ${questionType === 'mcq'
 \`\`\`
 
 现在请开始批改：`;
+  }
+
+  /**
+   * 构建大纲分析 Prompt
+   */
+  static buildSyllabusAnalysisPrompt(input: SyllabusAnalysisInput): string {
+    const { text, exam, context } = input;
+
+    return `你是一位专业的物理教育专家，需要分析 ${exam} 考试大纲，提取知识点结构。
+
+## 任务要求
+
+1. **分析大纲文本**，提取完整的知识点层级结构
+2. **一级分类**：如"力学"、"热学"、"电磁学"、"光学"、"现代物理"等
+3. **二级知识点**：每个一级分类下的具体知识点，如"牛顿定律"、"动量守恒"等
+4. **提取元数据**：章节号、页码等参考信息
+
+${context ? `## 上下文\n\n${context}\n` : ''}
+
+## 大纲文本
+
+${text}
+
+## 输出格式
+
+请以 JSON 格式输出，结构如下：
+
+\`\`\`json
+{
+  "categories": [
+    {
+      "name": "力学",
+      "order": 1,
+      "tags": [
+        {
+          "name": "牛顿运动定律",
+          "description": "牛顿第一、第二、第三定律及其应用",
+          "externalRefs": {
+            "section": "1.2",
+            "page": 5
+          }
+        },
+        {
+          "name": "功和能量",
+          "description": "功的概念、动能定理、机械能守恒",
+          "externalRefs": {
+            "section": "1.3",
+            "page": 12
+          }
+        }
+      ]
+    },
+    {
+      "name": "电磁学",
+      "order": 2,
+      "tags": [
+        {
+          "name": "电场",
+          "description": "电场强度、电势、电场力做功",
+          "externalRefs": {
+            "section": "2.1",
+            "page": 45
+          }
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+## 注意事项
+
+- 确保分类名称和知识点名称准确、规范
+- 保留原大纲中的章节编号和页码信息
+- 如果某些信息缺失（如页码），可以省略或设为 null
+- 知识点描述应简洁明了，概括核心内容
+- 按大纲原有顺序排列，使用 order 字段标记
+
+现在请开始分析：`;
   }
 }
