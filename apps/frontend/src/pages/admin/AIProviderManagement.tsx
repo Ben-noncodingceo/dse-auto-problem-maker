@@ -51,7 +51,7 @@ export default function AIProviderManagement() {
     timeoutMs: 30000,
   });
 
-  const { data: providersData, isLoading } = useQuery({
+  const { data: providersData, isLoading, error } = useQuery({
     queryKey: ['aiProviders'],
     queryFn: getAIProviders,
   });
@@ -166,19 +166,63 @@ export default function AIProviderManagement() {
         </p>
       </div>
 
+      {/* 错误提示 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <p className="font-medium mb-1">⚠️ 加载 AI 供应商失败</p>
+          <p className="text-sm">{error instanceof Error ? error.message : '未知错误'}</p>
+          <p className="text-sm mt-2">请检查：</p>
+          <ul className="text-sm list-disc list-inside ml-2 mt-1">
+            <li>后端 Worker 是否已部署</li>
+            <li>API 路由是否正确配置</li>
+            <li>数据库连接是否正常</li>
+          </ul>
+        </div>
+      )}
+
       {/* 预设 AI 供应商 */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">预设 AI 供应商</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          这些供应商的 API Key 需要在 Cloudflare Worker 环境变量中配置。配置后点击"启用"即可使用。
-        </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">预设 AI 供应商</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              这些供应商的 API Key 需要在 Cloudflare Worker 环境变量中配置。配置后点击"启用"即可使用。
+            </p>
+          </div>
+          {!isLoading && (
+            <button
+              onClick={() => {
+                console.log('=== AI Providers Debug Info ===');
+                console.log('Raw API Response:', providersData);
+                console.log('All Providers:', providers);
+                console.log('Preset Providers:', presetProviders);
+                console.log('Custom Providers:', customProviders);
+                alert('调试信息已输出到浏览器控制台（按 F12 查看）');
+              }}
+              className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+            >
+              调试信息
+            </button>
+          )}
+        </div>
 
         {presetProviders.length === 0 ? (
           <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
-            <p className="text-gray-600 mb-2">正在加载预设 AI 供应商...</p>
-            <p className="text-sm text-gray-500">
-              如果长时间未显示，请检查后端服务是否正常运行
+            <p className="text-gray-600 mb-2">
+              {isLoading ? '正在加载预设 AI 供应商...' : '无预设 AI 供应商'}
             </p>
+            {!isLoading && (
+              <>
+                <p className="text-sm text-gray-500 mb-2">
+                  后端已响应，但未返回预设供应商列表
+                </p>
+                <p className="text-xs text-gray-400">
+                  总供应商数: {providers.length} |
+                  预设供应商数: {presetProviders.length} |
+                  自定义供应商数: {customProviders.length}
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
