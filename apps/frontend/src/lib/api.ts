@@ -136,16 +136,35 @@ export const getGradingResult = (userAnswerId: string): Promise<{ data: any }> =
 export interface AIProvider {
   id: string;
   providerName: string;
+  displayName?: string;
+  baseUrl: string;
   modelName: string;
   isDefault: boolean;
+  isPreset: boolean;
+  hasApiKey?: boolean;
+  enabled?: boolean;
+  apiKey?: string; // Partial display for custom providers
 }
 
 export const getAIProviders = (): Promise<{ data: AIProvider[] }> => {
   return api.get('/ai-providers');
 };
 
-export const createAIProvider = (data: any): Promise<{ data: AIProvider }> => {
-  return api.post('/ai-providers', data);
+export const enablePresetProvider = (
+  providerName: string,
+  data: { isDefault?: boolean; modelName?: string }
+): Promise<{ data: AIProvider }> => {
+  return api.post(`/ai-providers/preset/${providerName}`, data);
+};
+
+export const createCustomProvider = (data: {
+  baseUrl: string;
+  modelName: string;
+  apiKey: string;
+  isDefault?: boolean;
+  timeoutMs?: number;
+}): Promise<{ data: AIProvider }> => {
+  return api.post('/ai-providers/custom', data);
 };
 
 export const updateAIProvider = (id: string, data: any): Promise<{ data: AIProvider }> => {
