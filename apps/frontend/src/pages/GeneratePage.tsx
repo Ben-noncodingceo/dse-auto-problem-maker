@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, Plus, X } from 'lucide-react';
 import {
   getKnowledgeCategories,
+  getAIProviders,
   generateQuestion,
   type GenerateQuestionRequest,
 } from '@/lib/api';
@@ -19,11 +20,18 @@ export default function GeneratePage() {
   const [questionType, setQuestionType] = useState<'mcq' | 'short'>('mcq');
   const [difficulty, setDifficulty] = useState<number>(3);
   const [language, setLanguage] = useState<'zh-cn' | 'zh-tw' | 'en'>('zh-cn');
+  const [selectedAIProvider, setSelectedAIProvider] = useState<string>('');
 
   // 获取知识点分类
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['knowledgeCategories'],
     queryFn: getKnowledgeCategories,
+  });
+
+  // 获取 AI 供应商列表
+  const { data: aiProvidersData, isLoading: aiProvidersLoading } = useQuery({
+    queryKey: ['aiProviders'],
+    queryFn: getAIProviders,
   });
 
   // 生成题目
@@ -37,6 +45,10 @@ export default function GeneratePage() {
   const categories = categoriesData?.data || [];
   const selectedCategoryData = categories.find((c) => c.id === selectedCategory);
   const availableTags = selectedCategoryData?.tags || [];
+
+  // 筛选已启用的 AI 供应商
+  const aiProviders = (aiProvidersData?.data || []).filter(p => p.enabled && p.hasApiKey);
+  const defaultProvider = aiProviders.find(p => p.isDefault);
 
   const handleAddCustomTag = () => {
     if (customTagInput.trim() && !customTags.includes(customTagInput.trim())) {
@@ -68,12 +80,13 @@ export default function GeneratePage() {
       questionType,
       difficulty,
       language,
+      aiProviderId: selectedAIProvider || undefined,
     };
 
     generateMutation.mutate(request);
   };
 
-  if (categoriesLoading) {
+  if (categoriesLoading || aiProvidersLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
@@ -199,6 +212,43 @@ export default function GeneratePage() {
               简答/计算题
             </label>
           </div>
+        </div>
+
+        {/* AI 模型选择 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            AI 模型
+          </label>
+          {aiProviders.length === 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+              <p className="text-sm">
+                暂无可用的 AI 供应商。请前往 <a href="/admin" className="underline font-medium">管理后台</a> 配置 AI 供应商。
+              </p>
+            </div>
+          ) : (
+            <>
+              <select
+                value={selectedAIProvider}
+                onChange={(e) => setSelectedAIProvider(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">-- 使用默认 AI 模型 --</option>
+                {aiProviders.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.displayName || provider.providerName}
+                    {provider.isDefault && ' (默认)'}
+                    {' - '}
+                    {provider.modelName}
+                  </option>
+                ))}
+              </select>
+              {defaultProvider && !selectedAIProvider && (
+                <p className="text-xs text-gray-500 mt-1">
+                  当前默认模型：{defaultProvider.displayName || defaultProvider.providerName} - {defaultProvider.modelName}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* 难度选择 */}

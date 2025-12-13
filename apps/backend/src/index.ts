@@ -19,6 +19,7 @@ type Bindings = {
   OPENAI_API_KEY?: string;
   DOUBAO_API_KEY?: string;
   TONGYI_API_KEY?: string;
+  GEMINI_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -33,6 +34,9 @@ app.use('*', (c, next) => {
   return cors({
     origin: corsOrigin,
     credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
   })(c, next);
 });
 
