@@ -1,4 +1,4 @@
-export type AIProvider = 'deepseek' | 'doubao' | 'tongyi' | 'chatgpt' | 'custom';
+export type AIProvider = 'deepseek' | 'doubao' | 'tongyi' | 'chatgpt' | 'gemini' | 'custom';
 
 export interface LLMConfig {
   provider: AIProvider;

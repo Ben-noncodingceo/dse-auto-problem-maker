@@ -124,6 +124,7 @@ enum AIProvider {
   DOUBAO
   TONGYI
   CHATGPT
+  GEMINI
   CUSTOM
 }
 
