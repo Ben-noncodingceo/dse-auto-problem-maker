@@ -72,6 +72,14 @@ jobs:
       - name: Install Wrangler
         run: pnpm add -g wrangler
 
+      # 先部署 Worker
+      - name: Deploy to Cloudflare Workers
+        run: wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # 然后设置 Secrets
       - name: Create secrets file
         run: |
           cat > .secrets.json << EOF
@@ -86,12 +94,6 @@ jobs:
 
       - name: Set Worker Secrets
         run: wrangler secret bulk .secrets.json
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Deploy to Cloudflare Workers
-        run: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
