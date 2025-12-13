@@ -1,54 +1,49 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Loader2, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Loader2, Edit, Trash2, X, Check, AlertCircle } from 'lucide-react';
 import {
   getAIProviders,
-  createAIProvider,
+  enablePresetProvider,
+  createCustomProvider,
   updateAIProvider,
   deleteAIProvider,
   type AIProvider,
 } from '../../lib/api';
 
-// AI 供应商预设配置
+// AI 供应商预设配置（仅用于前端显示）
 const PROVIDER_PRESETS = {
   DEEPSEEK: {
     name: 'DeepSeek',
-    baseUrl: 'https://api.deepseek.com/v1',
-    modelName: 'deepseek-chat',
     description: 'DeepSeek 深度求索 - 性价比极高的 AI 模型',
+    envKey: 'DEEPSEEK_API_KEY',
   },
   GEMINI: {
     name: 'Google Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    modelName: 'gemini-pro',
     description: 'Google Gemini - 强大的多模态 AI 模型',
+    envKey: 'GEMINI_API_KEY',
   },
   CHATGPT: {
     name: 'OpenAI ChatGPT',
-    baseUrl: 'https://api.openai.com/v1',
-    modelName: 'gpt-4-turbo-preview',
     description: 'OpenAI ChatGPT - 业界领先的 AI 模型',
+    envKey: 'OPENAI_API_KEY',
   },
   TONGYI: {
     name: '通义千问',
-    baseUrl: 'https://dashscope.aliyuncs.com/api',
-    modelName: 'qwen-turbo',
     description: '阿里云通义千问 - 中文优化的 AI 模型',
+    envKey: 'TONGYI_API_KEY',
   },
   DOUBAO: {
     name: '豆包',
-    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-    modelName: 'doubao-pro',
     description: '字节跳动豆包 - 高性能中文 AI 模型',
+    envKey: 'DOUBAO_API_KEY',
   },
 };
 
 export default function AIProviderManagement() {
   const queryClient = useQueryClient();
-  const [showModal, setShowModal] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
-  const [formData, setFormData] = useState({
-    providerName: 'DEEPSEEK',
+  const [customFormData, setCustomFormData] = useState({
     baseUrl: '',
     modelName: '',
     apiKey: '',
@@ -61,12 +56,20 @@ export default function AIProviderManagement() {
     queryFn: getAIProviders,
   });
 
-  const createMutation = useMutation({
-    mutationFn: createAIProvider,
+  const enablePresetMutation = useMutation({
+    mutationFn: ({ providerName, isDefault }: { providerName: string; isDefault: boolean }) =>
+      enablePresetProvider(providerName, { isDefault }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiProviders'] });
-      setShowModal(false);
-      resetForm();
+    },
+  });
+
+  const createCustomMutation = useMutation({
+    mutationFn: createCustomProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aiProviders'] });
+      setShowCustomModal(false);
+      resetCustomForm();
     },
   });
 
@@ -74,9 +77,9 @@ export default function AIProviderManagement() {
     mutationFn: ({ id, data }: { id: string; data: any }) => updateAIProvider(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiProviders'] });
-      setShowModal(false);
+      setShowCustomModal(false);
       setEditingProvider(null);
-      resetForm();
+      resetCustomForm();
     },
   });
 
@@ -88,10 +91,11 @@ export default function AIProviderManagement() {
   });
 
   const providers = providersData?.data || [];
+  const presetProviders = providers.filter((p) => p.isPreset);
+  const customProviders = providers.filter((p) => !p.isPreset);
 
-  const resetForm = () => {
-    setFormData({
-      providerName: 'DEEPSEEK',
+  const resetCustomForm = () => {
+    setCustomFormData({
       baseUrl: '',
       modelName: '',
       apiKey: '',
@@ -100,40 +104,37 @@ export default function AIProviderManagement() {
     });
   };
 
-  const handleProviderChange = (providerName: string) => {
-    const preset = PROVIDER_PRESETS[providerName as keyof typeof PROVIDER_PRESETS];
-    if (preset) {
-      setFormData({
-        ...formData,
-        providerName,
-        baseUrl: preset.baseUrl,
-        modelName: preset.modelName,
-      });
+  const handleEnablePreset = (providerName: string, isDefault: boolean = false) => {
+    enablePresetMutation.mutate({ providerName, isDefault });
+  };
+
+  const handleSetDefault = (id: string, providerName: string, isPreset: boolean) => {
+    if (isPreset) {
+      enablePresetMutation.mutate({ providerName, isDefault: true });
     } else {
-      setFormData({ ...formData, providerName });
+      updateMutation.mutate({ id, data: { isDefault: true } });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProvider) {
-      updateMutation.mutate({ id: editingProvider.id, data: formData });
+      updateMutation.mutate({ id: editingProvider.id, data: customFormData });
     } else {
-      createMutation.mutate(formData);
+      createCustomMutation.mutate(customFormData);
     }
   };
 
-  const handleEdit = (provider: AIProvider) => {
+  const handleEditCustom = (provider: AIProvider) => {
     setEditingProvider(provider);
-    setFormData({
-      providerName: provider.providerName,
-      baseUrl: '',
+    setCustomFormData({
+      baseUrl: provider.baseUrl,
       modelName: provider.modelName,
       apiKey: '', // 不回显 API Key
       isDefault: provider.isDefault,
       timeoutMs: 30000,
     });
-    setShowModal(true);
+    setShowCustomModal(true);
   };
 
   const handleDelete = (id: string) => {
@@ -142,10 +143,10 @@ export default function AIProviderManagement() {
     }
   };
 
-  const handleOpenModal = () => {
-    resetForm();
+  const handleOpenCustomModal = () => {
+    resetCustomForm();
     setEditingProvider(null);
-    setShowModal(true);
+    setShowCustomModal(true);
   };
 
   if (isLoading) {
@@ -157,109 +158,196 @@ export default function AIProviderManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">AI 供应商配置</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            配置用于题目生成和批改的 AI 模型
-          </p>
-        </div>
-        <button
-          onClick={handleOpenModal}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          添加供应商
-        </button>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">AI 供应商配置</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          配置用于题目生成和批改的 AI 模型
+        </p>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                供应商
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                模型
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                状态
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {providers.map((provider: AIProvider) => (
-              <tr key={provider.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {PROVIDER_PRESETS[provider.providerName as keyof typeof PROVIDER_PRESETS]?.name || provider.providerName}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {provider.providerName}
-                      </div>
+      {/* 预设 AI 供应商 */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">预设 AI 供应商</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          这些供应商的 API Key 需要在 Cloudflare Worker 环境变量中配置。配置后点击"启用"即可使用。
+        </p>
+
+        <div className="space-y-3">
+          {presetProviders.map((provider) => {
+            const preset = PROVIDER_PRESETS[provider.providerName as keyof typeof PROVIDER_PRESETS];
+            return (
+              <div
+                key={provider.id}
+                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h4 className="font-medium text-gray-900">
+                        {provider.displayName || preset?.name}
+                      </h4>
+                      {provider.isDefault && (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                          默认
+                        </span>
+                      )}
+                      {provider.enabled && !provider.hasApiKey && (
+                        <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                          API Key 缺失
+                        </span>
+                      )}
                     </div>
-                    {provider.isDefault && (
-                      <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                        默认
-                      </span>
+                    <p className="text-sm text-gray-600 mb-2">{preset?.description}</p>
+                    <div className="text-xs text-gray-500 space-y-1">
+                      <p>模型: {provider.modelName}</p>
+                      <p>环境变量: {preset?.envKey}</p>
+                    </div>
+                  </div>
+
+                  <div className="ml-4 flex items-center space-x-2">
+                    {provider.hasApiKey ? (
+                      <>
+                        {provider.enabled ? (
+                          <>
+                            <button
+                              onClick={() => handleDelete(provider.id)}
+                              className="px-3 py-1 text-sm text-red-600 hover:text-red-800 border border-red-300 rounded hover:bg-red-50"
+                            >
+                              禁用
+                            </button>
+                            {!provider.isDefault && (
+                              <button
+                                onClick={() => handleSetDefault(provider.id, provider.providerName, true)}
+                                className="px-3 py-1 text-sm text-primary-600 hover:text-primary-800 border border-primary-300 rounded hover:bg-primary-50"
+                              >
+                                设为默认
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleEnablePreset(provider.providerName)}
+                            disabled={enablePresetMutation.isPending}
+                            className="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 disabled:bg-gray-400 flex items-center"
+                          >
+                            {enablePresetMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                启用中...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                启用
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-sm text-yellow-600">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>请在 Worker 中配置 {preset?.envKey}</span>
+                      </div>
                     )}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{provider.modelName}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    已配置
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(provider)}
-                    className="text-primary-600 hover:text-primary-900 mr-4"
-                  >
-                    <Edit className="h-4 w-4 inline" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(provider.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="h-4 w-4 inline" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-        {providers.length === 0 && (
-          <div className="p-8 text-center text-gray-500">
-            <p className="mb-2">暂无 AI 供应商配置</p>
-            <p className="text-sm">请点击上方按钮添加供应商配置</p>
+      {/* 自定义 AI 供应商 */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">自定义 AI 供应商</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              添加不在预设列表中的 AI 供应商，需要提供完整的 API 信息
+            </p>
+          </div>
+          <button
+            onClick={handleOpenCustomModal}
+            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            添加自定义供应商
+          </button>
+        </div>
+
+        {customProviders.length === 0 ? (
+          <div className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+            <p className="mb-2">暂无自定义供应商</p>
+            <p className="text-sm">点击上方按钮添加自定义 AI 供应商</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {customProviders.map((provider) => (
+              <div
+                key={provider.id}
+                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h4 className="font-medium text-gray-900">自定义供应商</h4>
+                      {provider.isDefault && (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                          默认
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>Base URL: {provider.baseUrl}</p>
+                      <p>模型: {provider.modelName}</p>
+                      {provider.apiKey && <p>API Key: {provider.apiKey}</p>}
+                    </div>
+                  </div>
+
+                  <div className="ml-4 flex items-center space-x-2">
+                    {!provider.isDefault && (
+                      <button
+                        onClick={() => handleSetDefault(provider.id, provider.providerName, false)}
+                        className="px-3 py-1 text-sm text-primary-600 hover:text-primary-800 border border-primary-300 rounded hover:bg-primary-50"
+                      >
+                        设为默认
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleEditCustom(provider)}
+                      className="text-primary-600 hover:text-primary-900"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(provider.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* 添加/编辑模态框 */}
-      {showModal && (
+      {/* 添加/编辑自定义供应商模态框 */}
+      {showCustomModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h3 className="text-lg font-semibold">
-                {editingProvider ? '编辑 AI 供应商' : '添加 AI 供应商'}
+                {editingProvider ? '编辑自定义供应商' : '添加自定义供应商'}
               </h3>
               <button
                 onClick={() => {
-                  setShowModal(false);
+                  setShowCustomModal(false);
                   setEditingProvider(null);
-                  resetForm();
+                  resetCustomForm();
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -267,40 +355,21 @@ export default function AIProviderManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  供应商类型 *
-                </label>
-                <select
-                  value={formData.providerName}
-                  onChange={(e) => handleProviderChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  required
-                >
-                  {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
-                    <option key={key} value={key}>
-                      {preset.name} - {preset.description}
-                    </option>
-                  ))}
-                  <option value="CUSTOM">自定义供应商</option>
-                </select>
-              </div>
-
+            <form onSubmit={handleCustomSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Base URL *
                 </label>
                 <input
                   type="url"
-                  value={formData.baseUrl}
-                  onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                  value={customFormData.baseUrl}
+                  onChange={(e) => setCustomFormData({ ...customFormData, baseUrl: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="https://api.example.com/v1"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  API 的基础 URL
+                  AI 服务的基础 URL
                 </p>
               </div>
 
@@ -310,8 +379,8 @@ export default function AIProviderManagement() {
                 </label>
                 <input
                   type="text"
-                  value={formData.modelName}
-                  onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
+                  value={customFormData.modelName}
+                  onChange={(e) => setCustomFormData({ ...customFormData, modelName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="gpt-4-turbo-preview"
                   required
@@ -324,8 +393,8 @@ export default function AIProviderManagement() {
                 </label>
                 <input
                   type="password"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                  value={customFormData.apiKey}
+                  onChange={(e) => setCustomFormData({ ...customFormData, apiKey: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="sk-..."
                   required={!editingProvider}
@@ -343,8 +412,8 @@ export default function AIProviderManagement() {
                 </label>
                 <input
                   type="number"
-                  value={formData.timeoutMs}
-                  onChange={(e) => setFormData({ ...formData, timeoutMs: parseInt(e.target.value) })}
+                  value={customFormData.timeoutMs}
+                  onChange={(e) => setCustomFormData({ ...customFormData, timeoutMs: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   min="1000"
                   max="120000"
@@ -354,12 +423,12 @@ export default function AIProviderManagement() {
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  id="isDefault"
-                  checked={formData.isDefault}
-                  onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                  id="customIsDefault"
+                  checked={customFormData.isDefault}
+                  onChange={(e) => setCustomFormData({ ...customFormData, isDefault: e.target.checked })}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
-                <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="customIsDefault" className="ml-2 block text-sm text-gray-900">
                   设为默认供应商
                 </label>
               </div>
@@ -368,9 +437,9 @@ export default function AIProviderManagement() {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowModal(false);
+                    setShowCustomModal(false);
                     setEditingProvider(null);
-                    resetForm();
+                    resetCustomForm();
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
@@ -378,10 +447,10 @@ export default function AIProviderManagement() {
                 </button>
                 <button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={createCustomMutation.isPending || updateMutation.isPending}
                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-400"
                 >
-                  {createMutation.isPending || updateMutation.isPending ? (
+                  {createCustomMutation.isPending || updateMutation.isPending ? (
                     <span className="flex items-center">
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       保存中...
