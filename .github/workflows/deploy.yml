@@ -75,7 +75,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-          workingDirectory: .
+          packageManager: pnpm
           secrets: |
             DATABASE_URL
             DEEPSEEK_API_KEY
