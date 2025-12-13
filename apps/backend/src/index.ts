@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { prismaMiddleware } from './middleware/prisma';
 
 // Routes
 import syllabusRoutes from './routes/syllabus';
@@ -9,14 +10,34 @@ import aiProviderRoutes from './routes/ai-provider';
 import questionRoutes from './routes/question';
 import gradingRoutes from './routes/grading';
 
-const app = new Hono();
+// Environment variables type for Cloudflare Workers
+type Bindings = {
+  DATABASE_URL: string;
+  NODE_ENV?: string;
+  CORS_ORIGIN?: string;
+  DEEPSEEK_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  DOUBAO_API_KEY?: string;
+  TONGYI_API_KEY?: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 // Middleware
 app.use('*', logger());
-app.use('*', cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use('*', (c, next) => {
+  const corsOrigin = c.env?.CORS_ORIGIN ||
+    (typeof process !== 'undefined' && process.env?.CORS_ORIGIN) ||
+    'http://localhost:5173';
+
+  return cors({
+    origin: corsOrigin,
+    credentials: true,
+  })(c, next);
+});
+
+// Initialize Prisma client for each request
+app.use('*', prismaMiddleware);
 
 // Health check
 app.get('/health', (c) => {
