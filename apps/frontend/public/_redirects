@@ -1,0 +1,3 @@
+# Cloudflare Pages Redirects
+# 将所有 /api/* 请求代理到 Cloudflare Worker
+/api/*  https://dse-auto-problem-maker.workers.dev/api/:splat  200
